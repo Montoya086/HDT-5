@@ -38,3 +38,46 @@ def program_process( env, id, cpu, ram):
             print(f'PROCESO {id} LISTO PARA EJECUCION, numero de acciones: {actions} Tiempo: {env.now}')
             print("****************************************************************************")
             print()
+        with cpu.request() as req:
+            yield req
+            yield env.timeout(1)
+            print("**************************STATE: RUNNING**************************************")
+            print(f'PROCESO {id} EJECUTANDOSE, Tiempo: {env.now}            ')
+            print("******************************************************************************")
+            print()
+            actions-=3            
+        if(actions<=0):
+            with cpu.request() as req:
+                yield req
+                yield env.timeout(1)
+                ram_memory.put(memory_needed)
+                process_terminated = True
+                print("**************************STATE: TERMINATED***********************************")
+                print(f'PROCESO {id} TERMINATED, Tiempo: {env.now}            ')
+                print("******************************************************************************")
+                print()
+                finish_time=env.now
+                global tiempo_ejecucion 
+                tiempo_ejecucion += finish_time-start_time
+        else:
+            r = random.randint(1,2)
+            if(r==1):
+                with cpu.request() as req:
+                    yield req
+                    yield env.timeout(1)
+                    ram_memory.put(memory_needed)
+                    print("**************************STATE: WAITING**************************************")
+                    print(f'PROCESO {id} EN ESPERA, numero de acciones: {actions} Tiempo: {env.now}')
+                    print("******************************************************************************")
+                    print()
+            else:
+                ram_memory.put(memory_needed)
+                            
+random.seed(RANDOM_SEED)
+env = simpy.Environment()
+cpu = simpy.Resource(env, capacity=CPU_CORES)
+ram_memory = simpy.Container(env, init=CAPACITY, capacity =CAPACITY)
+env.process(process_creator(env, cpu,ram_memory))
+env.run()
+prom = tiempo_ejecucion/PROCESS_NUMBER
+print(f"promedio de ejecucion: {prom}")
